@@ -1,0 +1,24 @@
+{
+  "name": "hubot-plurk-adapter",
+  "version": "1.0.0",
+  "description": "plurk's adapter for hubot",
+  "main": "src/hubot-plurk-adapter.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jimting/hubot-plurk-adapter.git"
+  },
+  "keywords": [
+    "plurk",
+    "adapter",
+    "hubot"
+  ],
+  "author": "jimting",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jimting/hubot-plurk-adapter/issues"
+  },
+  "homepage": "https://github.com/jimting/hubot-plurk-adapter#readme"
+}
