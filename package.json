@@ -1,6 +1,6 @@
 {
   "name": "hubot-plurk-adapter",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "plurk's adapter for hubot",
   "main": "src/hubot-plurk-adapter.coffee",
   "scripts": {

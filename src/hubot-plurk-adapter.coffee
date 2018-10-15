@@ -3,22 +3,22 @@ try
 catch
   prequire = require 'parent-require'
   {Robot, Adapter, TextMessage, EnterMessage, LeaveMessage, Response} = prequire 'hubot'
-
+utf8 = require('utf8')
 EventEmitter = require('events').EventEmitter
 oauth = require("oauth")
 
 cronJob = require("cron").CronJob
 
 class Plurk extends Adapter
-  send: (plurk_id, strings...)->
-    console.log("Send: ", plurk_id)
+  send: (plurk, strings...)->
+    console.log("Send: ", plurk)
     strings.forEach (message) =>
-      @bot.reply plurk_id, message
+      @bot.reply plurk, message
     
-  reply: (plurk_id, strings...)->
-    console.log("Reply: ", plurk_id)
+  reply: (plurk, strings...)->
+    console.log("Reply: ", plurk)
     strings.forEach (message)=>
-      @bot.reply plurk_id, message  
+      @bot.reply plurk, message  
   
   run: ->
     self = @
@@ -32,29 +32,37 @@ class Plurk extends Adapter
     
     r = @robot.constructor
     @doPlurk = (data)->
-      console.log("---送出河道請求---")
       if data.response?
         data.content_raw = data.response.content_raw
         data.user_id = data.response.user_id
+        console.log("===News===")
         console.log("New message: ",data.content_raw)
-      if data.plurk_id? and data.content_raw? and data.user_id.toString() isnt "6993533"
-        console.log("Receive #{data.content_raw} Plurk ID: #{data.plurk_id}")
-        self.receive new r.TextMessage data.plurk_id, data.content_raw
+      if data.plurk_id? and data.content_raw?
+        if data.type == "new_response"
+          console.log(data.user[data.user_id].nick_name+" reply : \n")
+        if data.type == "new_plurk"
+          console.log("New plurk : \n")
+        console.log(data.content_raw+"\nPlurk ID: #{data.plurk_id}\n")
+        #這裡宣告一下TextMessage,舊方法不能用
+        self.receive new TextMessage data.plurk_id, data.content_raw
+        #message = new TextMessage "lp123lp123","hello",
+        #@self.receive message
+        #tmsg = new TextMessage({ plurk_id: data.plurk_id, content_raw: utf8.encode(data.content_raw) }, self.robot.name)
+        #self.receive tmsg
     
     
     do bot.acceptFriends
     
     @bot = bot
-
     
 
     bot.on 'channel_ready', ()->
       bot.plurk null, self.doPlurk
-      console.log("channel_ready")
+      console.log("=====CHANNEL READY=====")
    
     bot.on 'rePlurk', (offset)->
       bot.plurk offset, self.doPlurk
-      console.log("get new plurk!")
+      do bot.acceptFriends
     
     self.emit('connected')
     
@@ -95,7 +103,6 @@ class PlurkStreaming extends EventEmitter
      path = @channel + '&offset=' + offset
    else
      path = @channel + '&offset=0'
-   console.log("進到plurk了")
    @comet path, (error, offset, data)->
      if data?
       for plurk in data
@@ -105,29 +112,27 @@ class PlurkStreaming extends EventEmitter
     self = @
     @get "/APP/Realtime/getUserChannel", (error, data, response) ->
       if !error
-        console.log("data:",data)
-        console.log("checking:",data.comet_server.replace("&offset=0",""))
         if data.comet_server!=null
           #server = data.comet_server.match(/(.+)&offset=0/)[1]
           self.channel = data.comet_server.replace("&offset=0","")
           self.emit('channel_ready')
         else
-          console.log("channel failed!")
+          console.log("=====CHANNEL FAILED=====")
       else
         console.log(error)
-  reply: (plurk_id, message) ->
-    path = "/APP/Responses/responseAdd?plurk_id=#{plurk_id}&content=" + encodeURIComponent(message) + "&qualifier=says"
+  reply: (plurk, message) ->
+    path = "/APP/Responses/responseAdd?plurk_id=#{plurk.user}&content=" + encodeURIComponent(message) + "&qualifier=says"
     @get path, (error, data, response)->
       console.log(data)
     
   acceptFriends: ->
     self = @
     
-    cronJob "0 0 * * * *", ()->
-      self.get "/APP/Alerts/addAllAsFriends", (error, data, response)->
-        console.log("Error:", error)
-        console.log("接受所有好友邀請:", data)
-        console.log("Response:", response)
+    self.get "/APP/Alerts/addAllAsFriends", (error, data, response)->
+      if error?
+        console.log("Error when add friends : ", error)
+      if data?
+        console.log("===Accept All Friends!===")
 
   get: (path, callback) ->
     @request "GET", path, null, callback
@@ -145,7 +150,7 @@ class PlurkStreaming extends EventEmitter
       response.on "data", (chunk)->
         parseResponse chunk+'', callback
       response.on "end", (data) ->
-        console.log "End Request: #{path}"
+        #console.log "End Request: #{path}"
       response.on "error", (data)->
         console.log "Error : " + data
     
@@ -168,7 +173,7 @@ class PlurkStreaming extends EventEmitter
   comet: (server, callback)->
     self = @
     
-    console.log("進入Coment:","#{server}, #{@token}, #{@token_secret}, null")
+    console.log("===Searching Plurk...===")
     
     request = @consumer.get server, @token, @token_secret, null
       
@@ -177,7 +182,7 @@ class PlurkStreaming extends EventEmitter
         parseResponse(chunk+'', callback)
         
       response.on "end", (data) ->
-        console.log "End Comet: #{server}"
+        #console.log "End Comet: #{server}"
         self.emit 'rePlurk', 0
         
       response.on "error", (data)->
@@ -190,12 +195,15 @@ class PlurkStreaming extends EventEmitter
       if data.length > 0
         try
           #Remove JavaScript Callback (for getUserChannel return's comet)
-          data = data.match(/CometChannel.scriptCallback\((.+)\);\s*/)
+          #這邊直接把前面的"CometChannel.scriptCallback(" 和結尾的");" 處理掉
+          data = data.replace("CometChannel.scriptCallback(","")
+          data = data.replace(");","")
+          console.log("Data before replace : " + data)
+          #data=data.replace(/\\/g,"")
+          #直接把html連結處理掉
+          data=data.replace(/<[^>]+>/g,"")
           jsonData = ""
-          console.log("*data:"+data)
           if data?
-            jsonData = JSON.parse(data[1])
-          else
             jsonData = JSON.parse(data)
         catch err
           console.log("[Comet]Error: ", data, err)
