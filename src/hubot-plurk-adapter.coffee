@@ -3,7 +3,6 @@ try
 catch
   prequire = require 'parent-require'
   {Robot, Adapter, TextMessage, EnterMessage, LeaveMessage, Response} = prequire 'hubot'
-utf8 = require('utf8')
 EventEmitter = require('events').EventEmitter
 oauth = require("oauth")
 
@@ -198,7 +197,7 @@ class PlurkStreaming extends EventEmitter
           #這邊直接把前面的"CometChannel.scriptCallback(" 和結尾的");" 處理掉
           data = data.replace("CometChannel.scriptCallback(","")
           data = data.replace(");","")
-          console.log("Data before replace : " + data)
+          #console.log("Data before replace : " + data)
           #data=data.replace(/\\/g,"")
           #直接把html連結處理掉
           data=data.replace(/<[^>]+>/g,"")
