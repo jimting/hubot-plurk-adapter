@@ -4,11 +4,11 @@ Hubot's Adapter for Plurk
 
 # Important
 
-If your node verb is under than 9, then will failed!(IDK why)
+If your node verb is under than 9, then it will failed!(IDK why)
 
 # Environment Variable
 
-You need to set these EV
+You need to set these EV:
 
 * HUBOT_PLURK_KEY
 * HUBOT_PLURK_SECRET
@@ -21,7 +21,7 @@ After setting up the hubot, just install this adapter from npm by :
 
 * npm install hubot-plurk-adapter
 
-and use by :
+and use it by :
 
 * bin\hubot -a plurk-adapter
 
