@@ -6,7 +6,11 @@ catch
 EventEmitter = require('events').EventEmitter
 oauth = require("oauth")
 
-cronJob = require("cron").CronJob
+cronJob = require("node-cron")
+
+id = process.env.HUBOT_PLURK_USER_ID
+tmpString = ""
+checkingStatus = 0 #0=上一次成功(last time successed)，1=上一次失敗(last time failed)
 
 class Plurk extends Adapter
   send: (plurk, strings...)->
@@ -42,15 +46,32 @@ class Plurk extends Adapter
         if data.type == "new_plurk"
           console.log("New plurk : \n")
         console.log(data.content_raw+"\nPlurk ID: #{data.plurk_id}\n")
+        
+        #把這篇文標為已讀
+        bot.get "/APP/Timeline/markAsRead?ids=[#{data.plurk_id}]" , (error, data, response)->
+          if error?
+            console.log("######Unread Failed QQ######")
+        
         #這裡宣告一下TextMessage,舊方法不能用
         self.receive new TextMessage data.plurk_id, data.content_raw
         #message = new TextMessage "lp123lp123","hello",
         #@self.receive message
         #tmsg = new TextMessage({ plurk_id: data.plurk_id, content_raw: utf8.encode(data.content_raw) }, self.robot.name)
         #self.receive tmsg
-    
-    
+    #給偵測PO文用的ReceiveFunction(噗浪PO文ID,這句話誰回的,內容)
+    @hubotReceive = (plurk_id, user_id, content)->
+      #提示內容
+      console.log("===New Unread Plurk Found===")
+      console.log("Plurk_id : #{plurk_id}\nUser_ID : #{user_id}\nContent : #{content}")
+      #把這篇文標為已讀
+      bot.channelGet "/APP/Timeline/markAsRead?ids=[#{plurk_id}]" , (error, data, response)->
+        if error?
+          console.log("######Unread Failed QQ######")
+      #這裡宣告一下TextMessage,舊方法不能用
+      self.receive new TextMessage plurk_id, content_raw
+      
     do bot.acceptFriends
+    do bot.checkChannel
     
     @bot = bot
     
@@ -61,11 +82,13 @@ class Plurk extends Adapter
    
     bot.on 'rePlurk', (offset)->
       bot.plurk offset, self.doPlurk
-      do bot.acceptFriends
+      #do bot.acceptFriends
+    
+    bot.on 'channelReceive', (plurk_id, user_id, content)->
+      self.hubotReceive plurk_id, user_id, content
     
     self.emit('connected')
-    
-    
+
 exports.use = (robot) ->
   new Plurk robot
 
@@ -126,12 +149,12 @@ class PlurkStreaming extends EventEmitter
     
   acceptFriends: ->
     self = @
-    
-    self.get "/APP/Alerts/addAllAsFriends", (error, data, response)->
-      if error?
-        console.log("Error when add friends : ", error)
-      if data?
-        console.log("===Accept All Friends!===")
+    cronJob.schedule "* * * * *", () ->
+      self.get "/APP/Alerts/addAllAsFriends", (error, data, response)->
+        if error?
+          console.log("Error when add friends : ", error)
+        if data?
+          console.log("===Accept All Friends!===")
 
   get: (path, callback) ->
     @request "GET", path, null, callback
@@ -140,7 +163,7 @@ class PlurkStreaming extends EventEmitter
     @request "POST", path, body, callback
     
   request: (method, path, body, callback) ->
-    console.log("※Request : ","https://#{@domain}#{path}, #{@token}, #{@token_secret}, null")
+    #console.log("※Request : ","https://#{@domain}#{path}, #{@token}, #{@token_secret}, null")
     
     request = @consumer.get "https://#{@domain}#{path}", @token, @token_secret, null 
     #console.log("request:",request)
@@ -151,24 +174,63 @@ class PlurkStreaming extends EventEmitter
       response.on "end", (data) ->
         #console.log "End Request: #{path}"
       response.on "error", (data)->
-        console.log "Error : " + data
+        #console.log "Error : " + data
     
     request.end()
     
       #處理資料
     parseResponse = (data, callback) ->
       if data.length > 0
+        #把html tag處理掉
+        #data=data.replace(/<[^>]+>/g,"")
         #先把\處理掉
         data = data.toString()
         data=data.replace(/\\/g,"")
+        
         #用 Try/Catch 避免處理 JSON 出錯導致整個中斷
         try
           callback null, JSON.parse(data)
         catch err
-          console.log("Error Parse JSON:" + data + "\n", err)
+          #console.log("Error Parse JSON:" + data + "\n", err)
         #繼續執行
           callback null, data || {}
-  
+
+  channelGet: (path, callback) ->
+    @channelRequest "GET", path, null, callback
+    
+  channelRequest: (method, path, body, callback) ->
+    #console.log("※Request : ","https://#{@domain}#{path}, #{@token}, #{@token_secret}, null")
+    
+    request = @consumer.get "https://#{@domain}#{path}", @token, @token_secret, null 
+    #console.log("request:",request)
+    request.on "response", (response) ->
+      #console.log("response",response)
+      response.on "data", (chunk)->
+        parseResponse chunk+'', callback
+      response.on "end", (data) ->
+        #console.log "End Request: #{path}"
+      response.on "error", (data)->
+        #console.log "Error : " + data
+    
+    request.end()
+    
+      #處理資料
+    parseResponse = (data, callback) ->
+      if data.length > 0
+        #把html tag處理掉
+        data=data.replace(/<[^>]+>/g,"")
+        #先把\處理掉
+        data = data.toString()
+        data=data.replace(/\\\//g,"/")
+        
+        #用 Try/Catch 避免處理 JSON 出錯導致整個中斷
+        try
+          callback null, JSON.parse(data)
+        catch err
+          #console.log("Error Parse JSON:" + data + "\n", err)
+        #繼續執行
+          callback null, data || {}
+    
   comet: (server, callback)->
     self = @
     
@@ -195,23 +257,67 @@ class PlurkStreaming extends EventEmitter
         try
           #Remove JavaScript Callback (for getUserChannel return's comet)
           #這邊直接把前面的"CometChannel.scriptCallback(" 和結尾的");" 處理掉
+          #console.log("Data before replace : " + data)
           data = data.replace("CometChannel.scriptCallback(","")
           data = data.replace(");","")
-          #console.log("Data before replace : " + data)
-          #data=data.replace(/\\/g,"")
-          #直接把html連結處理掉
+          data=data.replace(/\\\//g,"/")
+          #把html tag處理掉
           data=data.replace(/<[^>]+>/g,"")
           jsonData = ""
           if data?
             jsonData = JSON.parse(data)
         catch err
-          console.log("[Comet]Error: ", data, err)
+          #console.log("[Comet]Error: ", data, err)
           
         try
           # Skip it on production
           #console.log "[Comet]JSON: " + data
           callback null, 0, jsonData.data
         catch err
-          console.log "[Comet]Error Parse JSON: " + data, err
+          #console.log "[Comet]Error Parse JSON: " + data, err
           callback null, 0, data || { }
-    
+  checkChannel: (callback)->
+    self = @
+    #每秒檢查一次未讀的訊息，看看是否有漏回的
+    cronJob.schedule "* * * * * *", () ->
+      self.channelGet "/APP/Timeline/getUnreadPlurks?offset=0&limit=1", (error, data, response)->
+        #開始檢查是否有漏掉未回覆的未讀訊息
+        #這邊的json格式:{plurk_users:{id},plurks:[]}
+        #針對每個新plurk去檢查(因為不能太長 每1秒檢查5個訊息/這邊可以自己設定啦，如果不是很多人用就可以檢查少一點XD)
+        #如果有未讀
+        #console.log(data)
+        try
+          #if checkingStatus == 1#如果上一次是失敗，則進入失敗處理迴圈
+            #data = tmpString + data #把上次失敗的內容和這次串在一起 再試一次
+          for plurk in data.plurks
+            #response_count=所有人回應的次數
+            if plurk.response_count > 0 #如果有人回過了
+              #responded=自己回應的次數
+              #如果responded = key_count則設為已讀跳過
+              #還不知道怎麼處理比較好 所以
+              #直接把最後回覆的內容丟給hubot
+              self.channelGet "/APP/Responses/getById?plurk_id=#{plurk.plurk_id}", (error2, data2, response2)->
+                #console.log(data2.responses[data2.response_count-1].content_raw)
+                if data2.response_count>0
+                  #console.log("Plurk_id : #{data2.responses[data2.response_count-1].plurk_id}\nUser_ID : #{data2.responses[data2.response_count-1].user_id}\nContent : #{data2.responses[data2.response_count-1].content}")
+                  if data2.responses[data2.response_count-1].user_id!=id#如果不是自己的回覆就送給hubot
+                    self.emit "channelReceive",data2.responses[data2.response_count-1].plurk_id, data2.responses[data2.response_count-1].user_id, data2.responses[data2.response_count-1].content_raw
+                  else#是自己的就標已讀
+                    self.channelGet "/APP/Timeline/markAsRead?ids=[#{data2.responses[data2.response_count-1].plurk_id}]" , (error, data, response)->
+                      if error?
+                        console.log("######Unread Failed QQ######")
+            else
+              if plurk.user_id!=id#如果不是自己的PO文就丟給hubot
+                #把PO文內容丟給hubot
+                self.emit "channelReceive",plurk.plurk_id, plurk.user_id, plurk.content_raw
+              else#是自己的就標已讀
+                self.channelGet "/APP/Timeline/markAsRead?ids=[#{plurk.plurk_id}]" , (error, data, response)->
+                  if error?
+                    console.log("######Unread Failed QQ######")
+          #checkingStatus = 0 #成功了！
+          #tmpString = "" #清空暫存資料
+        catch err
+          #do nothing
+          #console.log("[ERROR] : " + tmpString)
+          checkingStatus = 1 #失敗了QQ
+          #tmpString += data #保留data
