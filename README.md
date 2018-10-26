@@ -16,13 +16,13 @@ You need to set these EV:
 * HUBOT_PLURK_SECRET
 * HUBOT_PLURK_TOKEN
 * HUBOT_PLURK_TOKEN_SECRET
-* HUBOT_PLURK_ID
+* HUBOT_PLURK_USER_ID
 
 You can get your HUBOT_PLURK_KEY, HUBOT_PLURK_SECRET, HUBOT_PLURK_TOKEN, HUBOT_PLURK_TOKEN_SECRET on Plurk APP page.
 
 Here: https://www.plurk.com/PlurkApp/
 
-HUBOT_PLURK_ID is your account ID.
+HUBOT_PLURK_USER_ID is your account ID.
 
 You can get it on Plurk APP's /APP/Users/me API.
 
