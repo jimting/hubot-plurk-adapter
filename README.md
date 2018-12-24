@@ -1,5 +1,11 @@
 Type 4.0.0
 
+# Require something
+
+run this first
+
+	npm install parent-require,events,oauth,node-cron
+
 # hubot-plurk-adapter
 
 Hubot's Adapter for Plurk
