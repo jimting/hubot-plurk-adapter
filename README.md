@@ -2,9 +2,12 @@ Type 4.0.0
 
 # Require something
 
-run this first
+install these on npm first
 
-	npm install parent-require,events,oauth,node-cron
+1. parent-require
+2. events
+3. oauth
+4. node-cron
 
 # hubot-plurk-adapter
 
