@@ -8,15 +8,6 @@ Hubot's Adapter for Plurk
 
 If your node verb is under than 9, then it will failed!(IDK why)
 
-# Require something
-
-install these on npm first
-
-1. parent-require
-2. events
-3. oauth
-4. node-cron
-
 # Environment Variable
 
 You need to set these EV:
@@ -41,7 +32,14 @@ After setting up the hubot, just install this adapter from npm by :
 
 	npm install hubot-plurk-adapter
 
-and use it by :
+and install these on npm in the same way,too
+
+1. parent-require
+2. events
+3. oauth
+4. node-cron
+
+use it by :
 
 	bin\hubot -a plurk-adapter
 
