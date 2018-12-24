@@ -1,6 +1,6 @@
 {
   "name": "hubot-plurk-adapter",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "plurk's adapter for hubot(node verb uper than 8)",
   "main": "src/hubot-plurk-adapter.coffee",
   "scripts": {
