@@ -1,5 +1,13 @@
 Type 4.0.0
 
+# hubot-plurk-adapter
+
+Hubot's Adapter for Plurk
+
+# Important
+
+If your node verb is under than 9, then it will failed!(IDK why)
+
 # Require something
 
 install these on npm first
@@ -8,14 +16,6 @@ install these on npm first
 2. events
 3. oauth
 4. node-cron
-
-# hubot-plurk-adapter
-
-Hubot's Adapter for Plurk
-
-# Important
-
-If your node verb is under than 9, then it will failed!(IDK why)
 
 # Environment Variable
 
