@@ -41,7 +41,9 @@ and use it by :
 Hubot's message function have 2 types, "send" and "reply".
 
 Here, 'send' means create a new plurk. 
+
 You can set a schedule or something like it to auto the plurk.
+
 Just like below :
 
 ```
@@ -52,7 +54,9 @@ module.exports = function(robot) {
 ```
 	
 And 'reply' means create a response.
+
 You can use hubot's hear function to catch keywords and reply the plurk.
+
 Just like below :
 
 ```
