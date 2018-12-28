@@ -230,11 +230,19 @@ class PlurkStreaming extends EventEmitter
         data = data.toString()
         data=data.replace(/\\\//g,"/")
         
+        if self.isJsonString(tmpString) 
+          callback null, JSON.parse(tmpString) || {}
+          tmpString = ""
+        else
+          #console.log("不是JSON")
+        
         #用 Try/Catch 避免處理 JSON 出錯導致整個中斷
         try
           callback null, JSON.parse(data)
+          tmpString = ""
         catch err
           #console.log("Error Parse JSON:" + data + "\n", err)
+          tmpString += data
         #繼續執行
           callback null, data || {}
     
@@ -338,3 +346,9 @@ class PlurkStreaming extends EventEmitter
     setInterval () ->
         self.checkChannel()
     , 2000
+  isJsonString : (str) ->
+    try 
+        JSON.parse(str)
+    catch error
+        return false
+    return true
