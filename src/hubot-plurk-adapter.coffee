@@ -71,7 +71,7 @@ class Plurk extends Adapter
       self.receive new TextMessage plurk_id, content
       
     do bot.acceptFriends
-    do bot.startCheckingChannel
+    #do bot.startCheckingChannel
     
     @bot = bot
     
@@ -193,12 +193,17 @@ class PlurkStreaming extends EventEmitter
         #先把\處理掉
         data = data.toString()
         data=data.replace(/\\/g,"")
-        
+        if self.isJsonString(tmpString) 
+          callback null, JSON.parse(tmpString) || {}
+          tmpString = ""
+          
         #用 Try/Catch 避免處理 JSON 出錯導致整個中斷
         try
           callback null, JSON.parse(data)
+          tmpString = ""
         catch err
           #console.log("Error Parse JSON:" + data + "\n", err)
+          tmpString += data
         #繼續執行
           callback null, data || {}
 
