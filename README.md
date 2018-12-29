@@ -1,4 +1,4 @@
-Type 4.0.2
+Type 4.0.3
 
 # hubot-plurk-adapter
 

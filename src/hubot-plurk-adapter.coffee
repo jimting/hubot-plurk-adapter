@@ -10,6 +10,7 @@ cronJob = require("node-cron")
 
 id = process.env.HUBOT_PLURK_USER_ID
 tmpString = ""
+tmpString2 = ""
 checkingStatus = 0 #0=上一次成功(last time successed)，1=上一次失敗(last time failed)
 
 class Plurk extends Adapter
@@ -71,7 +72,7 @@ class Plurk extends Adapter
       self.receive new TextMessage plurk_id, content
       
     do bot.acceptFriends
-    #do bot.startCheckingChannel
+    do bot.startCheckingChannel
     
     @bot = bot
     
@@ -193,17 +194,17 @@ class PlurkStreaming extends EventEmitter
         #先把\處理掉
         data = data.toString()
         data=data.replace(/\\/g,"")
-        if self.isJsonString(tmpString) 
-          callback null, JSON.parse(tmpString) || {}
-          tmpString = ""
+        if self.isJsonString(tmpString2) 
+          callback null, JSON.parse(tmpString2) || {}
+          tmpString2 = ""
           
         #用 Try/Catch 避免處理 JSON 出錯導致整個中斷
         try
           callback null, JSON.parse(data)
-          tmpString = ""
+          tmpString2 = ""
         catch err
           #console.log("Error Parse JSON:" + data + "\n", err)
-          tmpString += data
+          tmpString2 += data
         #繼續執行
           callback null, data || {}
 
