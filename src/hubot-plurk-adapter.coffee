@@ -17,12 +17,12 @@ class Plurk extends Adapter
   send: (says, strings...)->
     strings.forEach (message)=>
       @bot.newPlurk says, message
-    
+
   reply: (plurk, says, strings...)->
     console.log("Reply: ", plurk)
     console.log("語氣:" ,says)
     strings.forEach (message)=>
-      @bot.reply plurk, says, message  
+      @bot.reply plurk, says, message 
 
   run: ->
     self = @
@@ -48,17 +48,15 @@ class Plurk extends Adapter
           console.log("New plurk : \n")
         console.log(data.content_raw+"\nPlurk ID: #{data.plurk_id}\n")
         
-        #把這篇文標為已讀
-        bot.get "/APP/Timeline/markAsRead?ids=[#{data.plurk_id}]" , (error, data, response)->
+      #把這篇文標為已讀
+      bot.get "/APP/Timeline/markAsRead?ids=[#{data.plurk_id}]" , (error, data, response)->
           if error?
             console.log("######Unread Failed QQ######")
-        
+      #hubotReceive(data.plurk_id, data.user_id, data.content_raw)
         #這裡宣告一下TextMessage,舊方法不能用
-        self.receive new TextMessage data.plurk_id, data.content_raw
+      self.receive new TextMessage(data.plurk_id, data.content_raw), data.plurk_id
         #message = new TextMessage "lp123lp123","hello",
         #@self.receive message
-        #tmsg = new TextMessage({ plurk_id: data.plurk_id, content_raw: utf8.encode(data.content_raw) }, self.robot.name)
-        #self.receive tmsg
     #給偵測PO文用的ReceiveFunction(噗浪PO文ID,這句話誰回的,內容)
     @hubotReceive = (plurk_id, user_id, content)->
       #提示內容
@@ -69,10 +67,10 @@ class Plurk extends Adapter
         if error?
           console.log("######Unread Failed QQ######")
       #這裡宣告一下TextMessage,舊方法不能用
-      self.receive new TextMessage plurk_id, content
+      self.receive new TextMessage(plurk_id, content), plurk_id
       
     do bot.acceptFriends
-    do bot.startCheckingChannel
+    #do bot.startCheckingChannel
     
     @bot = bot
     
@@ -86,7 +84,7 @@ class Plurk extends Adapter
       #do bot.acceptFriends
     
     bot.on 'channelReceive', (plurk_id, user_id, content)->
-      self.hubotReceive plurk_id, user_id, content
+      #self.hubotReceive plurk_id, user_id, content
     
     self.emit('connected')
 
@@ -147,13 +145,14 @@ class PlurkStreaming extends EventEmitter
   reply: (plurk, says, message) ->
     path = "/APP/Responses/responseAdd?plurk_id=#{plurk.user}&content=" + encodeURIComponent(message) + "&qualifier="+says
     @get path, (error, data, response)->
-      console.log(data)
+      #console.log(data)
+      
   newPlurk: (says, message) ->
     console.log("newPlurk: ", message)
     console.log("語氣:" ,says)
     path = "/APP/Timeline/plurkAdd?lang=en&qualifier="+says+"&porn=0&content=" + encodeURIComponent(message)
     @get path, (error, data, response)->
-      console.log(data)
+      #console.log(data)
    
   acceptFriends: ->
     self = @
@@ -264,7 +263,7 @@ class PlurkStreaming extends EventEmitter
         parseResponse(chunk+'', callback)
         
       response.on "end", (data) ->
-        #console.log "End Comet: #{server}"
+        console.log "End Comet: #{server}"
         self.emit 'rePlurk', 0
         
       response.on "error", (data)->
@@ -288,14 +287,14 @@ class PlurkStreaming extends EventEmitter
           if data?
             jsonData = JSON.parse(data)
         catch err
-          #console.log("[Comet]Error: ", data, err)
+          console.log("[Comet]Error: ", data, err)
           
         try
           # Skip it on production
           #console.log "[Comet]JSON: " + data
           callback null, 0, jsonData.data
         catch err
-          #console.log "[Comet]Error Parse JSON: " + data, err
+          console.log "[Comet]Error Parse JSON: " + data, err
           callback null, 0, data || { }
   checkChannel: (callback)->
       self = @
@@ -319,7 +318,7 @@ class PlurkStreaming extends EventEmitter
               #直接把最後回覆的內容丟給hubot
               if plurk.user_id!=id#如果不是自己的PO文就丟給hubot
                 #把PO文內容丟給hubot
-                self.emit "channelReceive",plurk.plurk_id, plurk.user_id, plurk.content_raw
+                #self.emit "channelReceive",plurk.plurk_id, plurk.user_id, plurk.content_raw
               else#是自己的就標已讀
                 self.channelGet "/APP/Timeline/markAsRead?ids=[#{plurk.plurk_id}]" , (error, data, response)->
                   if error?
@@ -341,11 +340,6 @@ class PlurkStreaming extends EventEmitter
           #console.log("[ERROR] : " + tmpString)
           checkingStatus = 1 #失敗了QQ
           #tmpString += data #保留data
-  clearChannel: (callback)->
-    self = @
-    #每分鐘第五秒清空一次河道，保持河道乾淨
-    cronJob.schedule "5 * * * * *", () ->
-      self.channelGet "/APP/Timeline/getUnreadPlurks?offset=0&limit=5", (error, data, response)->
 
   startCheckingChannel: (callback)->
     #這只是用來設定checkChannel的定時執行而已 我設定兩秒跑一次
