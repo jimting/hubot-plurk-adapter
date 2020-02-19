@@ -36,7 +36,7 @@ class Plurk extends Adapter
     
     r = @robot.constructor
     @doPlurk = (data)->
-      ##console.log(data)
+      #console.log(data)
       if data.response?
         data.content_raw = data.response.content_raw
         data.user_id = data.response.user_id
@@ -55,7 +55,7 @@ class Plurk extends Adapter
       #把這篇文標為已讀
       bot.get "/APP/Timeline/markAsRead?ids=[#{data.plurk_id}]" , (error, data, response)->
           if error?
-            #console.log("######Unread Failed QQ######")
+            console.log("######Unread Failed QQ######")
       #hubotReceive(data.plurk_id, data.user_id, data.content_raw)
         #這裡宣告一下TextMessage,舊方法不能用
       content_raw = data.content_raw
@@ -73,7 +73,7 @@ class Plurk extends Adapter
       #把這篇文標為已讀
       bot.channelGet "/APP/Timeline/markAsRead?ids=[#{plurk_id}]" , (error, data, response)->
         if error?
-          #console.log("######Unread Failed QQ######")
+          console.log("######Unread Failed QQ######")
       #這裡宣告一下TextMessage,舊方法不能用
       content_raw = content
       if porn
@@ -89,7 +89,7 @@ class Plurk extends Adapter
 
     bot.on 'channel_ready', ()->
       bot.plurk null, self.doPlurk
-      #console.log("=====CHANNEL READY=====")
+      console.log("=====CHANNEL READY=====")
    
     bot.on 'rePlurk', (offset)->
       bot.plurk offset, self.doPlurk
@@ -114,7 +114,7 @@ class PlurkStreaming extends EventEmitter
       @key = options.key
       @token_secret = options.tokensecret
       @domain = "www.plurk.com"
-      #console.log("OAuth_Action:",@token,@secret,@key,@token_secret)
+      console.log("OAuth_Action:",@token,@secret,@key,@token_secret)
       @consumer = new oauth.OAuth(
         'https://www.plurk.com/OAuth/request_token',
         'https://www.plurk.com/OAuth/access_token',
@@ -151,30 +151,30 @@ class PlurkStreaming extends EventEmitter
           self.channel = data.comet_server.replace("&offset=0","")+"&replurkers_detail=false&favorers_detail=false&limited_detail=false"
           self.emit('channel_ready')
         else
-          #console.log("=====CHANNEL FAILED=====")
+          console.log("=====CHANNEL FAILED=====")
       else
-        #console.log(error)
+        console.log(error)
 
   reply: (plurk, says, message) ->
     path = "/APP/Responses/responseAdd?plurk_id=#{plurk.user}&content=" + encodeURIComponent(message) + "&qualifier="+says
     @get path, (error, data, response)->
-      ##console.log(data)
+      #console.log(data)
       
   newPlurk: (says, message) ->
     #console.log("newPlurk: ", message)
     #console.log("語氣:" ,says)
     path = "/APP/Timeline/plurkAdd?lang=en&qualifier="+says+"&porn=0&content=" + encodeURIComponent(message)
     @get path, (error, data, response)->
-      ##console.log(data)
+      #console.log(data)
    
   acceptFriends: ->
     self = @
     cronJob.schedule "* * * * *", () ->
       self.get "/APP/Alerts/addAllAsFriends", (error, data, response)->
         if error?
-          #console.log("Error when add friends : ", error)
+          console.log("Error when add friends : ", error)
         if data?
-          #console.log("===Accept All Friends!===")
+          console.log("===Accept All Friends!===")
 
   get: (path, callback) ->
     @request "GET", path, null, callback
@@ -183,18 +183,18 @@ class PlurkStreaming extends EventEmitter
     @request "POST", path, body, callback
     
   request: (method, path, body, callback) ->
-    ##console.log("※Request : ","https://#{@domain}#{path}, #{@token}, #{@token_secret}, null")
+    #console.log("※Request : ","https://#{@domain}#{path}, #{@token}, #{@token_secret}, null")
     
     request = @consumer.get "https://#{@domain}#{path}", @token, @token_secret, null 
-    ##console.log("request:",request)
+    #console.log("request:",request)
     request.on "response", (response) ->
-      ##console.log("response",response)
+      #console.log("response",response)
       response.on "data", (chunk)->
         parseResponse chunk+'', callback
       response.on "end", (data) ->
-        ##console.log "End Request: #{path}"
+        #console.log "End Request: #{path}"
       response.on "error", (data)->
-        ##console.log "Error : " + data
+        #console.log "Error : " + data
     
     request.end()
     
@@ -215,7 +215,7 @@ class PlurkStreaming extends EventEmitter
           callback null, JSON.parse(data)
           tmpString2 = ""
         catch err
-          ##console.log("Error Parse JSON:" + data + "\n", err)
+          #console.log("Error Parse JSON:" + data + "\n", err)
           tmpString2 += data
         #繼續執行
           callback null, data || {}
@@ -224,18 +224,18 @@ class PlurkStreaming extends EventEmitter
     @channelRequest "GET", path, null, callback
     
   channelRequest: (method, path, body, callback) ->
-    ##console.log("※Request : ","https://#{@domain}#{path}, #{@token}, #{@token_secret}, null")
+    #console.log("※Request : ","https://#{@domain}#{path}, #{@token}, #{@token_secret}, null")
     
     request = @consumer.get "https://#{@domain}#{path}", @token, @token_secret, null 
-    ##console.log("request:",request)
+    #console.log("request:",request)
     request.on "response", (response) ->
-      ##console.log("response",response)
+      #console.log("response",response)
       response.on "data", (chunk)->
         parseResponse chunk+'', callback
       response.on "end", (data) ->
-        ##console.log "End Request: #{path}"
+        #console.log "End Request: #{path}"
       response.on "error", (data)->
-        ##console.log "Error : " + data
+        #console.log "Error : " + data
     
     request.end()
     
@@ -252,13 +252,13 @@ class PlurkStreaming extends EventEmitter
           callback null, JSON.parse(tmpString) || {}
           tmpString = ""
         else
-          ##console.log("不是JSON")
+          #console.log("不是JSON")
         
         #用 Try/Catch 避免處理 JSON 出錯導致整個中斷
         try
           callback null, JSON.parse(data)
         catch err
-          ##console.log("Error Parse JSON:" + data + "\n", err)
+          #console.log("Error Parse JSON:" + data + "\n", err)
           tmpString += data
         #繼續執行
           callback null, data || {}
@@ -275,10 +275,11 @@ class PlurkStreaming extends EventEmitter
         parseResponse(chunk+'', callback)
         
       response.on "end", (data) ->
-        ##console.log "End Comet: #{server}"
+        #console.log "End Comet: #{server}"
         self.emit 'rePlurk', 0
         
       response.on "error", (data)->
+        # do nothing
         #console.log "Error : " + data
     
     request.end()
@@ -288,7 +289,7 @@ class PlurkStreaming extends EventEmitter
       if data.length > 0
         #Remove JavaScript Callback (for getUserChannel return's comet)
         #這邊直接把前面的"CometChannel.scriptCallback(" 和結尾的");" 處理掉
-        ##console.log("Data before replace : " + data)
+        #console.log("Data before replace : " + data)
         data = data.replace("CometChannel.scriptCallback(","")
         data = data.replace(");","")
         data=data.replace(/\\\//g,"/")
@@ -302,12 +303,12 @@ class PlurkStreaming extends EventEmitter
         
         if self.isJsonString(data)
           # Skip it on production
-          ##console.log "[Comet]JSON: " + data
+          #console.log "[Comet]JSON: " + data
           callback null, 0, JSON.parse(data).data
           cometString = ""
         else
           cometString += data
-          ##console.log "[Comet]Error Parse JSON: " + data, err
+          #console.log "[Comet]Error Parse JSON: " + data, err
           callback null, 0, data || { }
   checkChannel: (callback)->
       self = @
@@ -318,7 +319,7 @@ class PlurkStreaming extends EventEmitter
         #這邊的json格式:{plurk_users:{id},plurks:[]}
         #針對每個新plurk去檢查(因為不能太長 每幾秒檢查5個訊息/這邊可以自己設定啦，如果不是很多人用就可以檢查少一點XD)
         #如果有未讀
-        ##console.log(data)
+        #console.log(data)
         try
           #if checkingStatus == 1#如果上一次是失敗，則進入失敗處理迴圈
             #data = tmpString + data #把上次失敗的內容和這次串在一起 再試一次
@@ -336,22 +337,22 @@ class PlurkStreaming extends EventEmitter
               else#是自己的就標已讀
                 self.channelGet "/APP/Timeline/markAsRead?ids=[#{plurk.plurk_id}]" , (error, data, response)->
                   if error?
-                    #console.log("######Unread Failed QQ######")
+                    console.log("######Unread Failed QQ######")
             self.channelGet "/APP/Responses/getById?plurk_id=#{plurk.plurk_id}", (error2, data2, response2)->
-              ##console.log(data2.responses[data2.response_count-1].content_raw)
+              #console.log(data2.responses[data2.response_count-1].content_raw)
               if data2.response_count>0
-                ##console.log("Plurk_id : #{data2.responses[data2.response_count-1].plurk_id}\nUser_ID : #{data2.responses[data2.response_count-1].user_id}\nContent : #{data2.responses[data2.response_count-1].content}")
+                #console.log("Plurk_id : #{data2.responses[data2.response_count-1].plurk_id}\nUser_ID : #{data2.responses[data2.response_count-1].user_id}\nContent : #{data2.responses[data2.response_count-1].content}")
                 if data2.responses[data2.response_count-1].user_id!=id#如果不是自己的回覆就送給hubot
                   self.emit "channelReceive",data2.responses[data2.response_count-1].plurk_id, data2.responses[data2.response_count-1].user_id, data2.responses[data2.response_count-1].content_raw, porn
                 else#是自己的就標已讀
                   self.channelGet "/APP/Timeline/markAsRead?ids=[#{data2.responses[data2.response_count-1].plurk_id}]" , (error, data, response)->
                     if error?
-                      #console.log("######Unread Failed QQ######")
+                      console.log("######Unread Failed QQ######")
           #checkingStatus = 0 #成功了！
           #tmpString = "" #清空暫存資料
         catch err
           #do nothing
-          ##console.log("[ERROR] : " + tmpString)
+          #console.log("[ERROR] : " + tmpString)
           checkingStatus = 1 #失敗了QQ
           #tmpString += data #保留data
 
